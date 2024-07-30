@@ -7,7 +7,12 @@
 
 module.exports = class DiscVim {
   start() {
-    BdApi.alert("goodbye world!", "bye");
+    document.addEventListener("keydown", (event) => {
+      // Check if the 'F' key was pressed
+      if (event.key.toLowerCase() === "f") {
+        BdApi.alert("goodbye world!", "bye");
+      }
+    });
     // Do stuff when enabled
   }
 
