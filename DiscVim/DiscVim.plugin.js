@@ -1,7 +1,7 @@
 /**
  * @name DiscVim
  * @author sebvu
- * @description Allows the integration of vimium-like motions for keyboard navigation.
+ * @description Vim motions navigation on discord.
  * @version 0.0.1
  */
 
