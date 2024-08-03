@@ -73,31 +73,47 @@ function sidePosition(element) {
    * @return side for tooltip to lean on
    */
 
-  if (element.getBoundingClientRect().x < window.innerWidth / 2) {
-    return "right";
-  } else {
-    return "left";
-  }
+  if (element.getBoundingClientRect().x < window.innerWidth / 2) return "right";
+  else return "left";
 }
 
-function uniqueCombinator(elements) {
+function uniqueCombinator(elements, map) {
   /**
    * Assign unique letter combinations on tooltips of all elements
    *
    * @param elements is a NodeList of all clickable elements
+   * @return an array of tooltips
    */
 
-  let uniquePairs = new Map();
+  const tooltips = [];
 
   for (const element of elements) {
-    uniquePairs.set(element, charPair(uniquePairs, element));
+    map.set(element, charPair(map, element));
 
     element.style.backgroundColor = "blue";
-    BdApi.UI.createTooltip(element, uniquePairs.get(element), {
-      style: "info",
-      side: sidePosition(element),
-    });
+
+    tooltips.push(
+      BdApi.UI.createTooltip(element, map.get(element), {
+        style: "info",
+        side: sidePosition(element),
+      }),
+    );
   }
+  return tooltips;
+}
+
+function comboJudge(map) {
+  /**
+   * Reads user input after tooltips are placed
+   *
+   * @return an exit code corresponding to what event happened
+   * There are three possible exits: False Combination, case-press, and true combination.
+   * False Combination: Combination that strays from any existing patterns.
+   * case-press: Aborting combination
+   * True Combination: Correct combination, will return an element.
+   */
+  console.log("comboJudge");
+  console.log(map);
 }
 
 function errorMessage(message) {
@@ -109,15 +125,13 @@ function errorMessage(message) {
   });
 }
 
-function clearUI() {
+function clearUI(ttarray, map) {
   // Clear currently applied UI
 
-  // const currentNodes = collectClickableElements();
+  for (const tooltip in ttarray) tooltip.disbled = true;
 
-  const currentNodes = collectClickableElements();
-
-  for (const element of currentNodes) {
-    element.style.backgroundColor = "transparent";
+  for (const [key, value] of map) {
+    key.style.backgroundColor = "transparent";
   }
 }
 
@@ -126,22 +140,33 @@ module.exports = class DiscVim {
     // bind class instance to DiscVIm
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.applied = false;
+    this.previousKey = null;
+    this.buffer = false;
+    this.shiftgBuffer = false;
+    this.currentMap = new Map();
+    this.currentTooltipsArray = [];
   }
 
   handleKeyDown(event) {
     try {
-      switch (event.key.toLowerCase()) {
+      let key = event.key.toLowerCase();
+      switch (key) {
         case "f":
           /*
           Pull all clickable elements within viewport, add unique letter combination to each one.
           All other controls are disabled until case key is pressed again, or combination is satisfactory.
         */
           if (this.applied) {
-            clearUI();
+            clearUI(this.currentTooltipsArray, this.currentMap);
             this.applied = false;
           } else {
             const currentNodes = collectClickableElements();
-            uniqueCombinator(currentNodes);
+            this.currentTooltipsArray = uniqueCombinator(
+              currentNodes,
+              this.currentMap,
+            );
+            console.log(this.currentTooltipsArray, this.currentMap);
+            comboJudge(this.currentMap);
             this.applied = true;
           }
           console.log(this.applied);
@@ -150,6 +175,7 @@ module.exports = class DiscVim {
           /*
           Scroll Up
         */
+          window.scrollTo(0, 0);
           BdApi.UI.showToast("k (up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
@@ -184,16 +210,29 @@ module.exports = class DiscVim {
           });
           break;
         case "g":
-          var objDiv = document.getElementById("divExample");
-          objDiv.scrollTop = objDiv.scrollHeight;
-
-          BdApi.UI.showToast("Scrolling to bottom of page", {
-            type: "info",
-            timeout: 1000,
-          });
+          if (event.shiftKey) {
+            BdApi.UI.showToast("shift+g (atw down) is not binded yet!", {
+              type: "warning",
+              timeout: 1000,
+            });
+            this.previousKey = null;
+            this.buffer = true;
+          } else if (this.previousKey == "g" && this.buffer == false) {
+            BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
+              type: "warning",
+              timeout: 1000,
+            });
+            this.previousKey = null;
+            this.buffer = true;
+          }
           break;
         default:
       }
+
+      console.log(this.previousKey);
+
+      if (this.buffer == true) this.buffer = false;
+      else this.previousKey = key;
     } catch (err) {
       errorMessage("DiscVim failed to handle keydown, check console!");
       console.error("DiscVim Keydown Error:", err.message);
@@ -215,9 +254,9 @@ module.exports = class DiscVim {
         "Thank you so much for trying out **DiscVim!** It is greatly meaningful to I as a *extremely* junior solo developer. 💜\n\nIf you find any pressing issues or suggestions, please submit through [the official github.](https://github.com/sebvu/BD-Plugins)",
       );
       console.log("DiscVim Successfully Initialized");
-    } catch (error) {
+    } catch (err) {
       errorMessage("DiscVim failed to start, check console!");
-      console.error("DiscVim Failed:", error.message);
+      console.error("DiscVim Failed:", err.message);
     } finally {
       stop();
     }
@@ -230,7 +269,7 @@ module.exports = class DiscVim {
 
       document.removeEventListener("keydown", this.handleKeyDown);
 
-      clearUI();
+      clearUI(this.clearTooltipsArray, this.currentMap);
 
       // Successful cleanup
       console.log("DiscVim Successfully Cleaned");
