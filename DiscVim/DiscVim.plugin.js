@@ -85,21 +85,16 @@ function uniqueCombinator(elements, map) {
    * @return an array of tooltips
    */
 
-  const tooltips = [];
-
   for (const element of elements) {
     map.set(element, charPair(map, element));
 
     element.style.backgroundColor = "blue";
 
-    tooltips.push(
-      BdApi.UI.createTooltip(element, map.get(element), {
-        style: "info",
-        side: sidePosition(element),
-      }),
-    );
+    BdApi.UI.createTooltip(element, map.get(element), {
+      style: "info",
+      side: sidePosition(element),
+    });
   }
-  return tooltips;
 }
 
 function comboJudge(map) {
@@ -125,14 +120,20 @@ function errorMessage(message) {
   });
 }
 
-function clearUI(ttarray, map) {
+function clearUI(map) {
   // Clear currently applied UI
-
-  for (const tooltip in ttarray) tooltip.disbled = true;
 
   for (const [key, value] of map) {
     key.style.backgroundColor = "transparent";
   }
+
+  const tooltips = document.querySelectorAll(".bd-tooltip-content");
+
+  tooltips.forEach((element) => {
+    console.log(element); // Do something with each element
+    console.log("removing");
+    element.remove();
+  });
 }
 
 module.exports = class DiscVim {
@@ -144,7 +145,6 @@ module.exports = class DiscVim {
     this.buffer = false;
     this.shiftgBuffer = false;
     this.currentMap = new Map();
-    this.currentTooltipsArray = [];
   }
 
   handleKeyDown(event) {
@@ -157,7 +157,7 @@ module.exports = class DiscVim {
           All other controls are disabled until case key is pressed again, or combination is satisfactory.
         */
           if (this.applied) {
-            clearUI(this.currentTooltipsArray, this.currentMap);
+            clearUI(this.currentMap);
             this.applied = false;
           } else {
             const currentNodes = collectClickableElements();
@@ -269,7 +269,7 @@ module.exports = class DiscVim {
 
       document.removeEventListener("keydown", this.handleKeyDown);
 
-      clearUI(this.clearTooltipsArray, this.currentMap);
+      clearUI(this.currentMap);
 
       // Successful cleanup
       console.log("DiscVim Successfully Cleaned");
