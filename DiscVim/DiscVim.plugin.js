@@ -65,18 +65,6 @@ function charPair(elementMap, element) {
   }
 }
 
-function sidePosition(element) {
-  /**
-   * Determine tooltip side position based on element
-   *
-   * @param element is a node
-   * @return side for tooltip to lean on
-   */
-
-  if (element.getBoundingClientRect().x < window.innerWidth / 2) return "right";
-  else return "left";
-}
-
 function uniqueCombinator(elements, map) {
   /**
    * Assign unique letter combinations on tooltips of all elements
@@ -87,8 +75,6 @@ function uniqueCombinator(elements, map) {
 
   for (const element of elements) {
     map.set(element, charPair(map, element));
-
-    element.style.backgroundColor = "blue";
 
     const box = document.createElement("h1");
     box.classList.add("overlay-box");
@@ -134,12 +120,8 @@ function errorMessage(message) {
   });
 }
 
-function clearUI(map) {
+function clearUI() {
   // Clear currently applied UI
-
-  for (const [key, value] of map) {
-    key.style.backgroundColor = "transparent";
-  }
 
   const tooltips = document.querySelectorAll(".overlay-box");
 
@@ -173,7 +155,7 @@ module.exports = class DiscVim {
           All other controls are disabled until case key is pressed again, or combination is satisfactory.
         */
           if (this.applied) {
-            clearUI(this.currentMap);
+            clearUI();
             this.applied = false;
           } else {
             const currentNodes = collectClickableElements();
@@ -285,7 +267,7 @@ module.exports = class DiscVim {
 
       document.removeEventListener("keydown", this.handleKeyDown);
 
-      clearUI(this.currentMap);
+      clearUI();
 
       // Successful cleanup
       console.log("DiscVim Successfully Cleaned");
