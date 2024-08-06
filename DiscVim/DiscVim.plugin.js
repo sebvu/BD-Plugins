@@ -28,12 +28,12 @@ function collectClickableElements() {
   `);
 }
 
-function charPair(elementMap, element) {
+function charPair(elementMap) {
   /**
    * Assign value pair
    *
    * @return Unique Letter Combination
-   * @param elements is a NodeList of all clickable elements
+   * @param elementMap is a Map of all elements and their corresponding letter combinations
    */
 
   const chars = [
@@ -63,18 +63,6 @@ function charPair(elementMap, element) {
       return pair;
     }
   }
-}
-
-function sidePosition(element) {
-  /**
-   * Determine tooltip side position based on element
-   *
-   * @param element is a node
-   * @return side for tooltip to lean on
-   */
-
-  if (element.getBoundingClientRect().x < window.innerWidth / 2) return "right";
-  else return "left";
 }
 
 function uniqueCombinator(elements, map) {
