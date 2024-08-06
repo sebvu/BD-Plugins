@@ -13,17 +13,17 @@ function collectClickableElements() {
    */
 
   return document.querySelectorAll(`
-    a[href], 
     button, 
+    a.link_d8bfb3,
     input[type="button"], 
     input[type="submit"], 
     input[type="reset"], 
-    [role="button"], 
+    [role="button"],
     [role="treeitem"], 
     [role="listitem"], 
-    [role="menuitem"], 
-    [role="textbox"], 
-    [role="tab"], 
+    [role="menuitem"],
+    [role="textbox"],
+    [role="tab"],
     [onclick]
   `);
 }
@@ -74,6 +74,7 @@ function uniqueCombinator(elements, map) {
    */
 
   for (const element of elements) {
+    // sets the unique letter combination to each element
     map.set(element, charPair(map, element));
     element.style.backgroundColor = "blue";
 
@@ -85,16 +86,20 @@ function uniqueCombinator(elements, map) {
     element.appendChild(box);
     // // Position the box
     box.style.position = "absolute";
-    box.style.fontSize - "10px";
+
+    if (!element.matches('[role="button"]')) {
+      box.style.top = "50%";
+      box.style.left = "50%";
+      box.style.transform = "translate(-50%, -50%)";
+    }
+    box.style.fontSize = "15px";
+    box.style.fontWeight = "bold";
+    box.style.borderRadius = "4px";
     box.style.margin = "2px";
     box.style.padding = "2px";
     box.style.color = "#11111b";
     box.style.backgroundColor = "#f9e2af";
-
-    // BdApi.UI.createTooltip(element, map.get(element), {
-    //   style: "info",
-    //   side: sidePosition(element),
-    // });
+    box.style.zIndex = "1000";
   }
 }
 
