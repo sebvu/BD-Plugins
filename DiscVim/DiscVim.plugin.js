@@ -108,8 +108,6 @@ function comboJudge(map) {
    * case-press: Aborting combination
    * True Combination: Correct combination, will return an element.
    */
-  // console.log("comboJudge");
-  // console.log(map);
 }
 
 function errorMessage(message) {
