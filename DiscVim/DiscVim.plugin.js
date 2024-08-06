@@ -75,6 +75,7 @@ function uniqueCombinator(elements, map) {
 
   for (const element of elements) {
     map.set(element, charPair(map, element));
+    element.style.backgroundColor = "blue";
 
     const box = document.createElement("h1");
     box.classList.add("overlay-box");
@@ -124,6 +125,11 @@ function clearUI() {
   // Clear currently applied UI
 
   const tooltips = document.querySelectorAll(".overlay-box");
+
+  const temporary = collectClickableElements();
+
+  for (const element of temporary)
+    element.style.backgroundColor = "transparent";
 
   console.log(tooltips);
 
