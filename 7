@@ -92,17 +92,13 @@ function uniqueCombinator(elements, map) {
 
     const box = document.createElement("h1");
     box.classList.add("overlay-box");
-    box.textContent = map.get(element);
+    box.textContent = "hi";
 
     // // Append the box to the target element
     element.appendChild(box);
     // // Position the box
-    box.style.position = "absolute";
-    box.style.fontSize - "10px";
-    box.style.margin = "2px";
-    box.style.padding = "2px";
-    box.style.color = "#11111b";
-    box.style.backgroundColor = "#f9e2af";
+    box.style.top = "10px"; // Adjust as needed
+    box.style.left = "10px"; // Adjust as needed
 
     // BdApi.UI.createTooltip(element, map.get(element), {
     //   style: "info",
@@ -121,8 +117,8 @@ function comboJudge(map) {
    * case-press: Aborting combination
    * True Combination: Correct combination, will return an element.
    */
-  // console.log("comboJudge");
-  // console.log(map);
+  console.log("comboJudge");
+  console.log(map);
 }
 
 function errorMessage(message) {
@@ -141,9 +137,7 @@ function clearUI(map) {
     key.style.backgroundColor = "transparent";
   }
 
-  const tooltips = document.querySelectorAll(".overlay-box");
-
-  console.log(tooltips);
+  const tooltips = document.querySelectorAll(".bd-tooltip-content");
 
   tooltips.forEach((element) => {
     console.log(element); // Do something with each element
