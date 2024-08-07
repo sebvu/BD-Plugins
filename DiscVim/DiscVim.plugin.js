@@ -13,19 +13,25 @@ function collectClickableElements() {
    */
 
   return document.querySelectorAll(`
-    button, 
+    button,
     a.link_d8bfb3,
-    input[type="button"], 
-    input[type="submit"], 
-    input[type="reset"], 
     [role="button"],
-    [role="treeitem"], 
-    [role="listitem"], 
-    [role="menuitem"],
-    [role="textbox"],
-    [role="tab"],
-    [onclick]
+    [role="treeitem"],
+    [role="listitem"],
+    [role="tab"]
   `);
+
+  // input[type="button"],
+  // input[type="submit"],
+  // input[type="reset"],
+  // [role="button"],
+  // [role="treeitem"],
+  // [role="listitem"],
+
+  // [role="menuitem"],
+  // [role="textbox"],
+  // [role="tab"],
+  // [onclick]
 }
 
 function charPair(elementMap) {
@@ -78,7 +84,7 @@ function uniqueCombinator(elements, map) {
     map.set(element, charPair(map, element));
     element.style.backgroundColor = "blue";
 
-    const box = document.createElement("h1");
+    const box = document.createElement("div");
     box.classList.add("overlay-box");
     box.textContent = map.get(element);
 
@@ -87,10 +93,17 @@ function uniqueCombinator(elements, map) {
     // // Position the box
     box.style.position = "absolute";
 
-    if (!element.matches('[role="button"]')) {
+    // subjective parameter, does not apply to all discord layouts.
+    if (
+      !element.matches('[role="button"]') &&
+      !element.matches('[role="listitem"]')
+    ) {
       box.style.top = "50%";
       box.style.left = "50%";
       box.style.transform = "translate(-50%, -50%)";
+      box.style.backgroundColor = "red";
+    } else {
+      box.style.backgroundColor = "#f9e2af";
     }
     box.style.fontSize = "15px";
     box.style.fontWeight = "bold";
@@ -98,12 +111,11 @@ function uniqueCombinator(elements, map) {
     box.style.margin = "2px";
     box.style.padding = "2px";
     box.style.color = "#11111b";
-    box.style.backgroundColor = "#f9e2af";
     box.style.zIndex = "1000";
   }
 }
 
-function comboJudge(map) {
+async function comboJudge(map) {
   /**
    * Reads user input after tooltips are placed
    *
@@ -113,6 +125,28 @@ function comboJudge(map) {
    * case-press: Aborting combination
    * True Combination: Correct combination, will return an element.
    */
+
+  let userInput = await getUserInput(); // Assume this function gets the user input
+
+  if (isValidCombination(userInput, map)) {
+    return "true combination";
+  } else if (isAbortingCombination(userInput)) {
+    return "case-press";
+  } else {
+    return "False Combination";
+  }
+}
+
+function getUserInput() {
+  // Function to get user input
+}
+
+function isValidCombination(input, map) {
+  // Function to check if input is a valid combination based on the map
+}
+
+function isAbortingCombination(input) {
+  // Function to check if user is aborting the combination
 }
 
 function errorMessage(message) {
