@@ -2,7 +2,7 @@
  * @name DiscVim
  * @author sebvu
  * @description Vim motions navigation on discord.
- * @version 0.0.1
+ * @version 0.1.1
  */
 
 function collectClickableElements() {
