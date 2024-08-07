@@ -1,11 +1,14 @@
-# DiscVim: Vim motions on Discord!
+# DiscVim
+
+Version 0.1.1
+
+Enjoy the beauty of finally navigating Discord with Vim motions. 🥂
 
 ## MOTIVATION
 
-- Never made a discord plugin ever or touched JS much at all. But, I absolutely love vim motions and the idea of integrating it on discord which I basically use everday (I have a life please 🙏) would be an amazing task to tackle.
-- **Massively** inspired by the [Vimium](https://github.com/philc/vimium) plugin. Full credits to them.
+- I have never created a Discord plugin or worked much with JavaScript. However, I absolutely love Vim motions and the idea of integrating them into Discord, which I use every day, would be an amazing challenge.
+- **Massively** inspired by the [Vimium](https://github.com/philc/vimium). Full credit to them.
 
 ## GOALS
 
-- This addon provides Vimium like functionality, being able to navigate discord with vim motions straight away.
-- Provide easy customization options to personalize your usage.
+- This addon provides Vimium-like functionality, allowing users to navigate Discord with Vim motions similar to Vimium.
