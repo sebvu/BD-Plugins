@@ -115,7 +115,7 @@ function uniqueCombinator(elements, map) {
   }
 }
 
-async function comboJudge(map) {
+function comboJudge(map) {
   /**
    * Reads user input after tooltips are placed
    *
@@ -125,28 +125,22 @@ async function comboJudge(map) {
    * case-press: Aborting combination
    * True Combination: Correct combination, will return an element.
    */
+  // let userInput = await getUserInput(); // Assume this function gets the user input
 
-  let userInput = await getUserInput(); // Assume this function gets the user input
+  var x = document.querySelectorAll(`
+    button,
+    a.link_d8bfb3,
+    [role="button"],
+    [role="treeitem"],
+    [role="listitem"],
+    [role="tab"]
+  `);
 
-  if (isValidCombination(userInput, map)) {
-    return "true combination";
-  } else if (isAbortingCombination(userInput)) {
-    return "case-press";
-  } else {
-    return "False Combination";
-  }
-}
+  var single = x[Math.floor(Math.random() * x.length)];
 
-function getUserInput() {
-  // Function to get user input
-}
-
-function isValidCombination(input, map) {
-  // Function to check if input is a valid combination based on the map
-}
-
-function isAbortingCombination(input) {
-  // Function to check if user is aborting the combination
+  console.log(single);
+  single.click();
+  clearMethod();
 }
 
 function errorMessage(message) {
@@ -158,8 +152,8 @@ function errorMessage(message) {
   });
 }
 
-function clearUI() {
-  // Clear currently applied UI
+function clearMethod() {
+  // Wipes UI, erases all existing elements from memory.
 
   const tooltips = document.querySelectorAll(".overlay-box");
 
@@ -198,7 +192,7 @@ module.exports = class DiscVim {
           All other controls are disabled until case key is pressed again, or combination is satisfactory.
         */
           if (this.applied) {
-            clearUI();
+            clearMethod();
             this.applied = false;
           } else {
             const currentNodes = collectClickableElements();
@@ -207,10 +201,13 @@ module.exports = class DiscVim {
               this.currentMap,
             );
             console.log(this.currentTooltipsArray, this.currentMap);
-            comboJudge(this.currentMap);
+            // comboJudge(this.currentMap);
             this.applied = true;
           }
           console.log(this.applied);
+          break;
+        case "o":
+          comboJudge(this.currentMap);
           break;
         case "k":
           /*
@@ -310,7 +307,7 @@ module.exports = class DiscVim {
 
       document.removeEventListener("keydown", this.handleKeyDown);
 
-      clearUI();
+      clearMethod();
 
       // Successful cleanup
       console.log("DiscVim Successfully Cleaned");
