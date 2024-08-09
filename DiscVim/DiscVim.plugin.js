@@ -25,18 +25,17 @@ module.exports = class DiscVim {
             this.searchModeApplied = false;
           } else {
             const interactiveElements = returnInteractiveElements();
-            this.currentTooltipsArray = applyPairIndicators(
-              interactiveElements,
-              this.currentElementPairs,
-            );
-            console.log(this.currentTooltipsArray, this.currentElementPairs);
-            // comboJudge(this.currentMap);
+            applyPairIndicators(interactiveElements, this.currentElementPairs);
+            // judgeUserInput(this.currentElementPairs);
             this.searchModeApplied = true;
           }
           console.log(this.searchModeApplied);
           break;
         case "o":
-          judgeUserInput(this.currentElementPairs);
+          if (this.searchModeApplied) {
+            judgeUserInput(this.currentElementPairs);
+            this.searchModeApplied = false;
+          }
           break;
         case "k":
           /*
