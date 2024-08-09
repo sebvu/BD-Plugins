@@ -2,18 +2,17 @@
  * @name DiscVim
  * @author sebvu
  * @description Vim motions navigation on discord.
- * @version 0.1.2
+ * @version 0.1.3
  */
 
 module.exports = class DiscVim {
   constructor(meta) {
-    // bind class instance to DiscVIm
     this.handleKeyDown = this.handleKeyDown.bind(this);
-    this.applied = false;
+    this.searchModeApplied = false;
     this.previousKey = null;
-    this.buffer = false;
-    this.shiftgBuffer = false;
-    this.currentMap = new Map();
+    this.gBuffer = false;
+    this.shiftGBuffer = false;
+    this.currentElementPairs = new Map();
   }
 
   handleKeyDown(event) {
@@ -21,27 +20,22 @@ module.exports = class DiscVim {
       let key = event.key.toLowerCase();
       switch (key) {
         case "f":
-          /*
-          Pull all clickable elements within viewport, add unique letter combination to each one.
-          All other controls are disabled until case key is pressed again, or combination is satisfactory.
-        */
-          if (this.applied) {
-            clearMethod();
-            this.applied = false;
+          if (this.searchModeApplied) {
+            cleanDiscord();
+            this.searchModeApplied = false;
           } else {
-            const currentNodes = collectClickableElements();
-            this.currentTooltipsArray = uniqueCombinator(
-              currentNodes,
-              this.currentMap,
-            );
-            console.log(this.currentTooltipsArray, this.currentMap);
-            // comboJudge(this.currentMap);
-            this.applied = true;
+            const interactiveElements = returnInteractiveElements();
+            applyPairIndicators(interactiveElements, this.currentElementPairs);
+            // judgeUserInput(this.currentElementPairs);
+            this.searchModeApplied = true;
           }
-          console.log(this.applied);
+          console.log(this.searchModeApplied);
           break;
         case "o":
-          comboJudge(this.currentMap);
+          if (this.searchModeApplied) {
+            judgeUserInput(this.currentElementPairs);
+            this.searchModeApplied = false;
+          }
           break;
         case "k":
           /*
@@ -88,14 +82,14 @@ module.exports = class DiscVim {
               timeout: 1000,
             });
             this.previousKey = null;
-            this.buffer = true;
-          } else if (this.previousKey == "g" && this.buffer == false) {
+            this.gBuffer = true;
+          } else if (this.previousKey == "g" && this.gBuffer == false) {
             BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
               type: "warning",
               timeout: 1000,
             });
             this.previousKey = null;
-            this.buffer = true;
+            this.gBuffer = true;
           }
           break;
         default:
@@ -103,60 +97,48 @@ module.exports = class DiscVim {
 
       console.log(this.previousKey);
 
-      if (this.buffer == true) this.buffer = false;
+      if (this.gBuffer == true) this.gBuffer = false;
       else this.previousKey = key;
     } catch (err) {
-      errorMessage("DiscVim failed to handle keydown, check console!");
+      consoleErrorMessage("DiscVim failed to handle keydown, check console!");
       console.error("DiscVim Keydown Error:", err.message);
-    } finally {
-      stop();
     }
   }
 
   start() {
     try {
-      // Startup with enabled
       console.log("DiscVim Initializing");
 
       document.addEventListener("keydown", this.handleKeyDown);
 
-      // Successful startup
       BdApi.UI.alert(
         "DiscVim v0.0.1",
         "Thank you so much for trying out **DiscVim!** It is greatly meaningful to I as a *extremely* junior solo developer. 💜\n\nIf you find any pressing issues or suggestions, please submit through [the official github.](https://github.com/sebvu/BD-Plugins)",
       );
       console.log("DiscVim Successfully Initialized");
     } catch (err) {
-      errorMessage("DiscVim failed to start, check console!");
+      consoleErrorMessage("DiscVim failed to start, check console!");
       console.error("DiscVim Failed:", err.message);
     }
   }
 
   stop() {
     try {
-      // Cleanup when disabled
       console.log("DiscVim Cleaning");
 
       document.removeEventListener("keydown", this.handleKeyDown);
 
-      clearMethod();
+      cleanDiscord();
 
-      // Successful cleanup
       console.log("DiscVim Successfully Cleaned");
     } catch (error) {
-      errorMessage("DiscVim failed to cleanup, check console!");
+      consoleErrorMessage("DiscVim failed to cleanup, check console!");
       console.error("DiscVim Cleanup Failure:", error.message);
     }
   }
 };
 
-function collectClickableElements() {
-  /**
-   * Collects all clickable elements within viewport
-   *
-   * @return NodeList of all elements queried
-   */
-
+function returnInteractiveElements() {
   return document.querySelectorAll(`
     button,
     a.link_d8bfb3,
@@ -167,15 +149,8 @@ function collectClickableElements() {
   `);
 }
 
-function charPair(elementMap) {
-  /**
-   * Assign value pair
-   *
-   * @return Unique Letter Combination
-   * @param elementMap is a Map of all elements and their corresponding letter combinations
-   */
-
-  const chars = [
+function returnUniquePair(elementMap) {
+  const possibleCharacters = [
     "A",
     "S",
     "D",
@@ -195,8 +170,10 @@ function charPair(elementMap) {
 
   while (true) {
     let pair =
-      chars[Math.floor(Math.random() * chars.length)] +
-      chars[Math.floor(Math.random() * chars.length)];
+      possibleCharacters[
+        Math.floor(Math.random() * possibleCharacters.length)
+      ] +
+      possibleCharacters[Math.floor(Math.random() * possibleCharacters.length)];
 
     if (elementMap.get(pair) == undefined) {
       return pair;
@@ -204,60 +181,47 @@ function charPair(elementMap) {
   }
 }
 
-function uniqueCombinator(elements, map) {
-  /**
-   * Assign unique letter combinations on tooltips of all elements
-   *
-   * @param elements is a NodeList of all clickable elements
-   * @return an array of tooltips
-   */
+function applyCommonStyles(indicator) {
+  indicator.style.fontSize = "15px";
+  indicator.style.fontWeight = "bold";
+  indicator.style.borderRadius = "4px";
+  indicator.style.margin = "2px";
+  indicator.style.padding = "2px";
+  indicator.style.color = "#11111b";
+  indicator.style.zIndex = "1000";
+  // indicator.style.backgroundColor = "#f9e2af";
+}
 
+function applyPairIndicators(elements, map) {
   for (const element of elements) {
-    // sets the unique letter combination to each element
-    map.set(element, charPair(map, element));
+    map.set(element, returnUniquePair(map, element));
     element.style.backgroundColor = "blue";
 
-    const box = document.createElement("div");
-    box.classList.add("overlay-box");
-    box.textContent = map.get(element);
+    const indicator = document.createElement("div");
+    indicator.classList.add("overlay-box");
+    indicator.textContent = map.get(element);
 
-    // // Append the box to the target element
-    element.appendChild(box);
-    // // Position the box
-    box.style.position = "absolute";
+    element.appendChild(indicator);
+    indicator.style.position = "absolute";
 
     // subjective parameter, does not apply to all discord layouts.
     if (
       !element.matches('[role="button"]') &&
       !element.matches('[role="listitem"]')
     ) {
-      box.style.top = "50%";
-      box.style.left = "50%";
-      box.style.transform = "translate(-50%, -50%)";
-      box.style.backgroundColor = "red";
+      indicator.style.top = "50%";
+      indicator.style.left = "50%";
+      indicator.style.transform = "translate(-50%, -50%)";
+      indicator.style.backgroundColor = "red";
     } else {
-      box.style.backgroundColor = "#f9e2af";
+      indicator.style.backgroundColor = "#f9e2af";
     }
-    box.style.fontSize = "15px";
-    box.style.fontWeight = "bold";
-    box.style.borderRadius = "4px";
-    box.style.margin = "2px";
-    box.style.padding = "2px";
-    box.style.color = "#11111b";
-    box.style.zIndex = "1000";
+
+    applyCommonStyles(indicator);
   }
 }
 
-function comboJudge(map) {
-  /**
-   * Reads user input after tooltips are placed
-   *
-   * @return an exit code corresponding to what event happened
-   * There are three possible exits: False Combination, case-press, and true combination.
-   * False Combination: Combination that strays from any existing patterns.
-   * case-press: Aborting combination
-   * True Combination: Correct combination, will return an element.
-   */
+function judgeUserInput(map) {
   // let userInput = await getUserInput(); // Assume this function gets the user input
 
   var x = document.querySelectorAll(`
@@ -273,24 +237,20 @@ function comboJudge(map) {
 
   console.log(single);
   single.click();
-  clearMethod();
+  cleanDiscord();
 }
 
-function errorMessage(message) {
-  // Helper errorMessage function
-
+function consoleErrorMessage(message) {
   BdApi.UI.showToast(message, {
     type: "error",
     timeout: 5000,
   });
 }
 
-function clearMethod() {
-  // Wipes UI, erases all existing elements from memory.
-
+function cleanDiscord() {
   const tooltips = document.querySelectorAll(".overlay-box");
 
-  const temporary = collectClickableElements();
+  const temporary = returnInteractiveElements();
 
   for (const element of temporary)
     element.style.backgroundColor = "transparent";
@@ -298,7 +258,7 @@ function clearMethod() {
   console.log(tooltips);
 
   tooltips.forEach((element) => {
-    console.log(element); // Do something with each element
+    console.log(element);
     console.log("removing");
     element.remove();
   });
