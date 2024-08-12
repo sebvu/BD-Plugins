@@ -147,22 +147,7 @@ function getInteractiveElements() {
 }
 
 function getUniquePair(elementMap) {
-  const possibleCharacters = [
-    "A",
-    "S",
-    "D",
-    "G",
-    "H",
-    "J",
-    "K",
-    "L",
-    "W",
-    "E",
-    "R",
-    "U",
-    "I",
-    "O",
-  ];
+  const possibleCharacters = "ASDGHJKLWERUIO";
 
   while (true) {
     let pair =
