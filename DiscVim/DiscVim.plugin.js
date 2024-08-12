@@ -8,34 +8,31 @@
 module.exports = class DiscVim {
   constructor(meta) {
     this.handleKeyDown = this.handleKeyDown.bind(this);
-    this.searchModeApplied = false;
     this.previousKey = null;
     this.gBuffer = false;
     this.shiftGBuffer = false;
     this.currentElementPairs = new Map();
   }
 
-  handleKeyDown(event) {
+  async handleKeyDown(event) {
     try {
       let key = event.key.toLowerCase();
       switch (key) {
         case "f":
-          if (this.searchModeApplied) {
-            cleanDiscord();
-            this.searchModeApplied = false;
-          } else {
-            const interactiveElements = returnInteractiveElements();
-            applyPairIndicators(interactiveElements, this.currentElementPairs);
-            // judgeUserInput(this.currentElementPairs);
-            this.searchModeApplied = true;
-          }
-          console.log(this.searchModeApplied);
-          break;
-        case "o":
-          if (this.searchModeApplied) {
-            judgeUserInput(this.currentElementPairs);
-            this.searchModeApplied = false;
-          }
+          /*
+           Search mode
+        */
+          const newInteractiveElements = getInteractiveElements();
+          displayPairIndicators(
+            newInteractiveElements,
+            this.currentElementPairs,
+          );
+          document.removeEventListener("keydown", this.handleKeyDown);
+          let temp = await judgeUserInput(this.currentElementPairs);
+          console.log("Script finished with " + temp);
+          document.addEventListener("keydown", this.handleKeyDown);
+          cleanDiscord();
+          console.log("FINISHEDHDHAHDH");
           break;
         case "k":
           /*
@@ -83,7 +80,7 @@ module.exports = class DiscVim {
             });
             this.previousKey = null;
             this.gBuffer = true;
-          } else if (this.previousKey == "g" && this.gBuffer == false) {
+          } else if (this.previousKey == "g" && this.gBuffer === false) {
             BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -97,7 +94,7 @@ module.exports = class DiscVim {
 
       console.log(this.previousKey);
 
-      if (this.gBuffer == true) this.gBuffer = false;
+      if (this.gBuffer === true) this.gBuffer = false;
       else this.previousKey = key;
     } catch (err) {
       consoleErrorMessage("DiscVim failed to handle keydown, check console!");
@@ -138,7 +135,7 @@ module.exports = class DiscVim {
   }
 };
 
-function returnInteractiveElements() {
+function getInteractiveElements() {
   return document.querySelectorAll(`
     button,
     a.link_d8bfb3,
@@ -149,12 +146,11 @@ function returnInteractiveElements() {
   `);
 }
 
-function returnUniquePair(elementMap) {
+function getUniquePair(elementMap) {
   const possibleCharacters = [
     "A",
     "S",
     "D",
-    "F",
     "G",
     "H",
     "J",
@@ -175,7 +171,7 @@ function returnUniquePair(elementMap) {
       ] +
       possibleCharacters[Math.floor(Math.random() * possibleCharacters.length)];
 
-    if (elementMap.get(pair) == undefined) {
+    if (elementMap.get(pair) === undefined) {
       return pair;
     }
   }
@@ -192,9 +188,9 @@ function applyCommonStyles(indicator) {
   // indicator.style.backgroundColor = "#f9e2af";
 }
 
-function applyPairIndicators(elements, map) {
+function displayPairIndicators(elements, map) {
   for (const element of elements) {
-    map.set(element, returnUniquePair(map, element));
+    map.set(element, getUniquePair(map, element));
     element.style.backgroundColor = "blue";
 
     const indicator = document.createElement("div");
@@ -221,23 +217,70 @@ function applyPairIndicators(elements, map) {
   }
 }
 
-function judgeUserInput(map) {
-  // let userInput = await getUserInput(); // Assume this function gets the user input
+// async function judgeUserInput(map) {
+//   let combination = "";
+//   let combinationBroken = false;
+//
+//   return new Promise((resolve, reject) => {
+//     while (
+//       !map.get(combination) &&
+//       combination.length < 2 &&
+//       !combinationBroken
+//     ) {
+//       document.addEventListener("keydown", function (event) {
+//         const keyPressed = event.key.toLowerCase();
+//         if (keyPressed === "f") {
+//           resolve("F was pressed");
+//         } else if (keyPressed != null) {
+//           for (let value in map.values()) {
+//             let firstLetter = value.charAt(0).toLowerCase();
+//             if (keyPressed != firstLetter) combinationBroken = true;
+//           }
+//           combination += keyPressed;
+//         } else {
+//           reject("Null keypress");
+//         }
+//       });
+//     }
+//   });
+// }
 
-  var x = document.querySelectorAll(`
-    button,
-    a.link_d8bfb3,
-    [role="button"],
-    [role="treeitem"],
-    [role="listitem"],
-    [role="tab"]
-  `);
+async function judgeUserInput(map) {
+  let combination = "";
+  // let combinationBroken = false;
 
-  var single = x[Math.floor(Math.random() * x.length)];
+  const reversedMap = new Map(Array.from(map, ([key, value]) => [value, key]));
 
-  console.log(single);
-  single.click();
-  cleanDiscord();
+  console.log(reversedMap);
+  while (combination.length < 2) {
+    const keyPressed = await getInput();
+    // return keyPressed;
+    combination += keyPressed.toUpperCase();
+  }
+
+  if (reversedMap.get(combination)) {
+    console.log(combination);
+    console.log(reversedMap.get(combination));
+    reversedMap.get(combination).click();
+  } else {
+    BdApi.UI.showToast("Not a combination!", {
+      type: "warning",
+      timeout: 1000,
+    });
+  }
+
+  return combination;
+}
+
+function getInput() {
+  return new Promise((resolve, reject) => {
+    document.addEventListener("keydown", function (event) {
+      const keyPressed = event.key.toLowerCase();
+
+      if (keyPressed != null) resolve(keyPressed);
+      else reject("Null");
+    });
+  });
 }
 
 function consoleErrorMessage(message) {
@@ -250,16 +293,16 @@ function consoleErrorMessage(message) {
 function cleanDiscord() {
   const tooltips = document.querySelectorAll(".overlay-box");
 
-  const temporary = returnInteractiveElements();
+  const temporary = getInteractiveElements();
 
   for (const element of temporary)
     element.style.backgroundColor = "transparent";
 
-  console.log(tooltips);
+  // console.log(tooltips);
 
   tooltips.forEach((element) => {
-    console.log(element);
-    console.log("removing");
+    // console.log(element);
+    // console.log("removing");
     element.remove();
   });
 }
