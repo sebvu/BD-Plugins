@@ -8,34 +8,27 @@
 module.exports = class DiscVim {
   constructor(meta) {
     this.handleKeyDown = this.handleKeyDown.bind(this);
-    this.searchModeApplied = false;
     this.previousKey = null;
     this.gBuffer = false;
     this.shiftGBuffer = false;
     this.currentElementPairs = new Map();
   }
 
-  handleKeyDown(event) {
+  async handleKeyDown(event) {
     try {
       let key = event.key.toLowerCase();
       switch (key) {
         case "f":
-          if (this.searchModeApplied) {
-            cleanDiscord();
-            this.searchModeApplied = false;
-          } else {
-            const interactiveElements = returnInteractiveElements();
-            applyPairIndicators(interactiveElements, this.currentElementPairs);
-            // judgeUserInput(this.currentElementPairs);
-            this.searchModeApplied = true;
-          }
-          console.log(this.searchModeApplied);
-          break;
-        case "o":
-          if (this.searchModeApplied) {
-            judgeUserInput(this.currentElementPairs);
-            this.searchModeApplied = false;
-          }
+          const newInteractiveElements = returnInteractiveElements();
+          applyPairIndicators(newInteractiveElements, this.currentElementPairs);
+          document.removeEventListener("keydown", this.handleKeyDown);
+          const judgeUserInputResult = await judgeUserInput(
+            this.currentElementPairs,
+          );
+          document.addEventListener("keydown", this.handleKeyDown);
+          console.log(judgeUserInputResult);
+          cleanDiscord();
+          console.log("FINISHEDHDHAHDH");
           break;
         case "k":
           /*
@@ -222,22 +215,30 @@ function applyPairIndicators(elements, map) {
 }
 
 function judgeUserInput(map) {
+  return new Promise((resolve, reject) => {
+    document.addEventListener("keydown", function (event) {
+      const keyPressed = event.key.toLowerCase();
+      if (keyPressed != null) {
+        resolve(keyPressed); // Resolve the Promise when the letter "o" is pressed
+      } else {
+        reject("Null Input");
+      }
+    });
+  });
   // let userInput = await getUserInput(); // Assume this function gets the user input
-
-  var x = document.querySelectorAll(`
-    button,
-    a.link_d8bfb3,
-    [role="button"],
-    [role="treeitem"],
-    [role="listitem"],
-    [role="tab"]
-  `);
-
-  var single = x[Math.floor(Math.random() * x.length)];
-
-  console.log(single);
-  single.click();
-  cleanDiscord();
+  // var x = document.querySelectorAll(`
+  //   button,
+  //   a.link_d8bfb3,
+  //   [role="button"],
+  //   [role="treeitem"],
+  //   [role="listitem"],
+  //   [role="tab"]
+  // `);
+  //
+  // var single = x[Math.floor(Math.random() * x.length)];
+  //
+  // console.log(single);
+  // single.click();
 }
 
 function consoleErrorMessage(message) {
@@ -255,11 +256,11 @@ function cleanDiscord() {
   for (const element of temporary)
     element.style.backgroundColor = "transparent";
 
-  console.log(tooltips);
+  // console.log(tooltips);
 
   tooltips.forEach((element) => {
-    console.log(element);
-    console.log("removing");
+    // console.log(element);
+    // console.log("removing");
     element.remove();
   });
 }
