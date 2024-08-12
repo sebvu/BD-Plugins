@@ -19,6 +19,9 @@ module.exports = class DiscVim {
       let key = event.key.toLowerCase();
       switch (key) {
         case "f":
+          /*
+           Search mode
+        */
           const newInteractiveElements = returnInteractiveElements();
           applyPairIndicators(newInteractiveElements, this.currentElementPairs);
           document.removeEventListener("keydown", this.handleKeyDown);
@@ -147,7 +150,6 @@ function returnUniquePair(elementMap) {
     "A",
     "S",
     "D",
-    "F",
     "G",
     "H",
     "J",
@@ -214,7 +216,7 @@ function applyPairIndicators(elements, map) {
   }
 }
 
-function judgeUserInput(map) {
+async function judgeUserInput(map) {
   return new Promise((resolve, reject) => {
     document.addEventListener("keydown", function (event) {
       const keyPressed = event.key.toLowerCase();
@@ -225,20 +227,6 @@ function judgeUserInput(map) {
       }
     });
   });
-  // let userInput = await getUserInput(); // Assume this function gets the user input
-  // var x = document.querySelectorAll(`
-  //   button,
-  //   a.link_d8bfb3,
-  //   [role="button"],
-  //   [role="treeitem"],
-  //   [role="listitem"],
-  //   [role="tab"]
-  // `);
-  //
-  // var single = x[Math.floor(Math.random() * x.length)];
-  //
-  // console.log(single);
-  // single.click();
 }
 
 function consoleErrorMessage(message) {
