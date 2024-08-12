@@ -22,14 +22,15 @@ module.exports = class DiscVim {
           /*
            Search mode
         */
-          const newInteractiveElements = returnInteractiveElements();
-          applyPairIndicators(newInteractiveElements, this.currentElementPairs);
-          document.removeEventListener("keydown", this.handleKeyDown);
-          const judgeUserInputResult = await judgeUserInput(
+          const newInteractiveElements = getInteractiveElements();
+          displayPairIndicators(
+            newInteractiveElements,
             this.currentElementPairs,
           );
+          document.removeEventListener("keydown", this.handleKeyDown);
+          let temp = await judgeUserInput(this.currentElementPairs);
+          console.log("Script finished with " + temp);
           document.addEventListener("keydown", this.handleKeyDown);
-          console.log(judgeUserInputResult);
           cleanDiscord();
           console.log("FINISHEDHDHAHDH");
           break;
@@ -79,7 +80,7 @@ module.exports = class DiscVim {
             });
             this.previousKey = null;
             this.gBuffer = true;
-          } else if (this.previousKey == "g" && this.gBuffer == false) {
+          } else if (this.previousKey == "g" && this.gBuffer === false) {
             BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -93,7 +94,7 @@ module.exports = class DiscVim {
 
       console.log(this.previousKey);
 
-      if (this.gBuffer == true) this.gBuffer = false;
+      if (this.gBuffer === true) this.gBuffer = false;
       else this.previousKey = key;
     } catch (err) {
       consoleErrorMessage("DiscVim failed to handle keydown, check console!");
@@ -134,7 +135,7 @@ module.exports = class DiscVim {
   }
 };
 
-function returnInteractiveElements() {
+function getInteractiveElements() {
   return document.querySelectorAll(`
     button,
     a.link_d8bfb3,
@@ -145,7 +146,7 @@ function returnInteractiveElements() {
   `);
 }
 
-function returnUniquePair(elementMap) {
+function getUniquePair(elementMap) {
   const possibleCharacters = [
     "A",
     "S",
@@ -170,7 +171,7 @@ function returnUniquePair(elementMap) {
       ] +
       possibleCharacters[Math.floor(Math.random() * possibleCharacters.length)];
 
-    if (elementMap.get(pair) == undefined) {
+    if (elementMap.get(pair) === undefined) {
       return pair;
     }
   }
@@ -187,9 +188,9 @@ function applyCommonStyles(indicator) {
   // indicator.style.backgroundColor = "#f9e2af";
 }
 
-function applyPairIndicators(elements, map) {
+function displayPairIndicators(elements, map) {
   for (const element of elements) {
-    map.set(element, returnUniquePair(map, element));
+    map.set(element, getUniquePair(map, element));
     element.style.backgroundColor = "blue";
 
     const indicator = document.createElement("div");
@@ -216,15 +217,68 @@ function applyPairIndicators(elements, map) {
   }
 }
 
+// async function judgeUserInput(map) {
+//   let combination = "";
+//   let combinationBroken = false;
+//
+//   return new Promise((resolve, reject) => {
+//     while (
+//       !map.get(combination) &&
+//       combination.length < 2 &&
+//       !combinationBroken
+//     ) {
+//       document.addEventListener("keydown", function (event) {
+//         const keyPressed = event.key.toLowerCase();
+//         if (keyPressed === "f") {
+//           resolve("F was pressed");
+//         } else if (keyPressed != null) {
+//           for (let value in map.values()) {
+//             let firstLetter = value.charAt(0).toLowerCase();
+//             if (keyPressed != firstLetter) combinationBroken = true;
+//           }
+//           combination += keyPressed;
+//         } else {
+//           reject("Null keypress");
+//         }
+//       });
+//     }
+//   });
+// }
+
 async function judgeUserInput(map) {
+  let combination = "";
+  // let combinationBroken = false;
+
+  const reversedMap = new Map(Array.from(map, ([key, value]) => [value, key]));
+
+  console.log(reversedMap);
+  while (combination.length < 2) {
+    const keyPressed = await getInput();
+    // return keyPressed;
+    combination += keyPressed.toUpperCase();
+  }
+
+  if (reversedMap.get(combination)) {
+    console.log(combination);
+    console.log(reversedMap.get(combination));
+    reversedMap.get(combination).click();
+  } else {
+    BdApi.UI.showToast("Not a combination!", {
+      type: "warning",
+      timeout: 1000,
+    });
+  }
+
+  return combination;
+}
+
+function getInput() {
   return new Promise((resolve, reject) => {
     document.addEventListener("keydown", function (event) {
       const keyPressed = event.key.toLowerCase();
-      if (keyPressed != null) {
-        resolve(keyPressed); // Resolve the Promise when the letter "o" is pressed
-      } else {
-        reject("Null Input");
-      }
+
+      if (keyPressed != null) resolve(keyPressed);
+      else reject("Null");
     });
   });
 }
@@ -239,7 +293,7 @@ function consoleErrorMessage(message) {
 function cleanDiscord() {
   const tooltips = document.querySelectorAll(".overlay-box");
 
-  const temporary = returnInteractiveElements();
+  const temporary = getInteractiveElements();
 
   for (const element of temporary)
     element.style.backgroundColor = "transparent";
