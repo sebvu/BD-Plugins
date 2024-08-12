@@ -217,34 +217,6 @@ function displayPairIndicators(elements, map) {
   }
 }
 
-// async function judgeUserInput(map) {
-//   let combination = "";
-//   let combinationBroken = false;
-//
-//   return new Promise((resolve, reject) => {
-//     while (
-//       !map.get(combination) &&
-//       combination.length < 2 &&
-//       !combinationBroken
-//     ) {
-//       document.addEventListener("keydown", function (event) {
-//         const keyPressed = event.key.toLowerCase();
-//         if (keyPressed === "f") {
-//           resolve("F was pressed");
-//         } else if (keyPressed != null) {
-//           for (let value in map.values()) {
-//             let firstLetter = value.charAt(0).toLowerCase();
-//             if (keyPressed != firstLetter) combinationBroken = true;
-//           }
-//           combination += keyPressed;
-//         } else {
-//           reject("Null keypress");
-//         }
-//       });
-//     }
-//   });
-// }
-
 async function judgeUserInput(map) {
   let combination = "";
   // let combinationBroken = false;
