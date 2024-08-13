@@ -11,58 +11,90 @@ module.exports = class DiscVim {
     this.previousKey = null;
     this.gBuffer = false;
     this.shiftGBuffer = false;
+    this.vimModeEnabled = false;
   }
 
   async handleKeyDown(event) {
     try {
       let key = event.key.toLowerCase();
+
+      if (key === "c" && event.ctrlKey && event.shiftKey) {
+        /*
+            Enable Vim Mode
+            */
+        let result = "";
+
+        if (!this.vimModeEnabled) {
+          this.vimModeEnabled = true;
+          result = "ON";
+        } else {
+          this.vimModeEnabled = false;
+          cleanDiscord();
+          result = "OFF";
+        }
+
+        BdApi.UI.showToast(`Vim Mode ${result}`, {
+          type: "success",
+          timeout: 1000,
+        });
+      }
+
+      if (!this.vimModeEnabled) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
       switch (key) {
         case "f":
           /*
            Search mode
         */
+          this.vimModeEnabled = false;
           const interactiveElements = getInteractiveElements();
           const generatedCombos = getUniquePair(interactiveElements.length);
-          displayPairIndicators(interactiveElements, generatedCombos);
-          document.removeEventListener("keydown", this.handleKeyDown);
-          await judgeUserInput(interactiveElements, generatedCombos);
-          document.addEventListener("keydown", this.handleKeyDown);
-          cleanDiscord();
-          console.log("finished f mode");
+
+          if (interactiveElements.length === generatedCombos.length) {
+            displayPairIndicators(interactiveElements, generatedCombos);
+            await judgeUserInput(
+              interactiveElements,
+              generatedCombos,
+              this.vimModeEnabled,
+            );
+            cleanDiscord();
+            console.log("finished f mode");
+          } else {
+            console.log("DID NOT MATCH LENGTHS.");
+            console.log(
+              interactiveElements.length + " LENGTH OF interactiveElements",
+            );
+            console.log(generatedCombos.length + " LENGTH OF generatedCombo");
+            consoleErrorMessage("DID NOT MATCH LENGTHS.");
+          }
+          this.vimModeEnabled = true;
           break;
         case "k":
-          /*
-          Scroll Up
-        */
-          window.scrollTo(0, 0);
+          window.scrollBy(0, -50); // Scroll up by 50 pixels
           BdApi.UI.showToast("k (up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "j":
-          /*
-          Scroll Down
-        */
+          window.scrollBy(0, 50); // Scroll down by 50 pixels
           BdApi.UI.showToast("j (down) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "u":
-          /*
-          Scroll Half Page Up
-        */
-          window.scrollBy(0, -100);
+          window.scrollBy(0, -window.innerHeight / 2); // Scroll up by half the screen height
           BdApi.UI.showToast("u (half page up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "d":
-          /*
-          Scroll Half Page Down
-        */
+          window.scrollBy(0, window.innerHeight / 2); // Scroll down by half the screen height
           BdApi.UI.showToast("d (half page down) is not binded yet!", {
             type: "warning",
             timeout: 1000,
@@ -70,6 +102,7 @@ module.exports = class DiscVim {
           break;
         case "g":
           if (event.shiftKey) {
+            window.scrollTo(0, document.body.scrollHeight); // Scroll to the bottom
             BdApi.UI.showToast("shift+g (atw down) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -77,6 +110,7 @@ module.exports = class DiscVim {
             this.previousKey = null;
             this.gBuffer = true;
           } else if (this.previousKey == "g" && this.gBuffer === false) {
+            window.scrollTo(0, 0); // Scroll to the top
             BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -85,6 +119,10 @@ module.exports = class DiscVim {
             this.gBuffer = true;
           }
           break;
+        case "r":
+          if (event.ctrlKey) {
+            location.reload(true); // Keep option for reload
+          }
         default:
       }
 
@@ -161,7 +199,7 @@ function getUniquePair(maxSize) {
   const possibleCharacters = "ASDGHJKLWERUIO";
   let pairs = [];
 
-  while (pairs.length <= maxSize) {
+  while (pairs.length < maxSize) {
     let pair = "";
     const randomIndex1 = Math.floor(Math.random() * possibleCharacters.length);
     const randomIndex2 = Math.floor(Math.random() * possibleCharacters.length);
@@ -247,9 +285,10 @@ function hasPotentialMatch(userCombination, combinations) {
 
 async function judgeUserInput(elements, combinations) {
   let userCombination = "";
+  let maxTries = 500;
   console.log(combinations);
 
-  while (true) {
+  for (let i = 0; i < maxTries; i++) {
     const keyPressed = await getInput();
 
     if (keyPressed === "F") return;
@@ -276,12 +315,22 @@ async function judgeUserInput(elements, combinations) {
 
 function getInput() {
   return new Promise((resolve, reject) => {
-    document.addEventListener("keydown", function (event) {
+    const keydownListener = (event) => {
       const keyPressed = event.key.toUpperCase();
 
-      if (keyPressed != null) resolve(keyPressed);
-      else reject("Null");
-    });
+      event.preventDefault();
+      event.stopPropagation();
+
+      document.removeEventListener("keydown", keydownListener);
+
+      if (keyPressed != null) {
+        resolve(keyPressed);
+      } else {
+        reject("Null");
+      }
+    };
+
+    document.addEventListener("keydown", keydownListener);
   });
 }
 
