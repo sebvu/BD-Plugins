@@ -11,7 +11,6 @@ module.exports = class DiscVim {
     this.previousKey = null;
     this.gBuffer = false;
     this.shiftGBuffer = false;
-    this.currentElementPairs = new Map();
   }
 
   async handleKeyDown(event) {
@@ -22,17 +21,14 @@ module.exports = class DiscVim {
           /*
            Search mode
         */
-          const newInteractiveElements = getInteractiveElements();
-          displayPairIndicators(
-            newInteractiveElements,
-            this.currentElementPairs,
-          );
+          const interactiveElements = getInteractiveElements();
+          const generatedCombos = getUniquePair(interactiveElements.length);
+          displayPairIndicators(interactiveElements, generatedCombos);
           document.removeEventListener("keydown", this.handleKeyDown);
-          let temp = await judgeUserInput(this.currentElementPairs);
-          console.log("Script finished with " + temp);
+          await judgeUserInput(interactiveElements, generatedCombos);
           document.addEventListener("keydown", this.handleKeyDown);
           cleanDiscord();
-          console.log("FINISHEDHDHAHDH");
+          console.log("finished f mode");
           break;
         case "k":
           /*
@@ -136,34 +132,62 @@ module.exports = class DiscVim {
 };
 
 function getInteractiveElements() {
-  return document.querySelectorAll(`
+  const elements = document.querySelectorAll(`
     button,
     a.link_d8bfb3,
+    a.link_c91bad,
+    div.labelContainer_d90b3d,
+    div.listItemContents_e05dae,
+    div.interactive_ac5d22,
+    div.memberItem_b09fe8,
+    div.memberInner_a31c43,
     [role="button"],
     [role="treeitem"],
-    [role="listitem"],
     [role="tab"]
   `);
+
+  return Array.from(elements).filter((element) => {
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <=
+        (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+  });
 }
-
-function getUniquePair(elementMap) {
+function getUniquePair(maxSize) {
   const possibleCharacters = "ASDGHJKLWERUIO";
+  let pairs = [];
 
-  while (true) {
+  while (pairs.length <= maxSize) {
+    let pair = "";
     const randomIndex1 = Math.floor(Math.random() * possibleCharacters.length);
     const randomIndex2 = Math.floor(Math.random() * possibleCharacters.length);
 
-    let pair =
-      possibleCharacters[randomIndex1] + possibleCharacters[randomIndex2];
+    if (pairs.length > 196) {
+      const randomIndex3 = Math.floor(
+        Math.random() * possibleCharacters.length,
+      );
+      pair += possibleCharacters[randomIndex3];
+    }
 
-    if (elementMap.get(pair) === undefined) {
-      return pair;
+    pair =
+      pair +
+      possibleCharacters[randomIndex1] +
+      possibleCharacters[randomIndex2];
+
+    if (!pairs.includes(pair)) {
+      pairs.push(pair);
     }
   }
+  return pairs;
 }
 
 function applyCommonStyles(indicator) {
   indicator.style.fontSize = "15px";
+  indicator.style.fontFamily = "system-ui";
   indicator.style.fontWeight = "bold";
   indicator.style.borderRadius = "4px";
   indicator.style.margin = "2px";
@@ -173,14 +197,20 @@ function applyCommonStyles(indicator) {
   // indicator.style.backgroundColor = "#f9e2af";
 }
 
-function displayPairIndicators(elements, map) {
-  for (const element of elements) {
-    map.set(element, getUniquePair(map, element));
+function displayPairIndicators(interactiveElements, comboPairs) {
+  // both interactiveElements and comboPairs are equal sized
+  maxSize = interactiveElements.length;
+
+  for (let i = 0; i < maxSize; i++) {
+    const uniquePair = comboPairs[i];
+    const element = interactiveElements[i];
+    console.log(uniquePair + "=>" + element);
+
     element.style.backgroundColor = "blue";
 
     const indicator = document.createElement("div");
     indicator.classList.add("overlay-box");
-    indicator.textContent = map.get(element);
+    indicator.textContent = uniquePair;
 
     element.appendChild(indicator);
     indicator.style.position = "absolute";
@@ -188,7 +218,9 @@ function displayPairIndicators(elements, map) {
     // subjective parameter, does not apply to all discord layouts.
     if (
       !element.matches('[role="button"]') &&
-      !element.matches('[role="listitem"]')
+      !element.matches('[role="listitem"]') &&
+      !element.matches("div.labelContainer_d90b3d") &&
+      !element.matches("div.memberInner_a31c43")
     ) {
       indicator.style.top = "50%";
       indicator.style.left = "50%";
@@ -202,37 +234,50 @@ function displayPairIndicators(elements, map) {
   }
 }
 
-async function judgeUserInput(map) {
-  let combination = "";
-  // let combinationBroken = false;
+function hasPotentialMatch(userCombination, combinations) {
+  for (const combination of combinations) {
+    if (combination.startsWith(userCombination)) {
+      console.log("true");
+      return true;
+    }
+  }
+  console.log("false");
+  return false;
+}
 
-  const reversedMap = new Map(Array.from(map, ([key, value]) => [value, key]));
+async function judgeUserInput(elements, combinations) {
+  let userCombination = "";
+  console.log(combinations);
 
-  console.log(reversedMap);
-  while (combination.length < 2) {
+  while (true) {
     const keyPressed = await getInput();
-    // return keyPressed;
-    combination += keyPressed.toUpperCase();
-  }
 
-  if (reversedMap.get(combination)) {
-    console.log(combination);
-    console.log(reversedMap.get(combination));
-    reversedMap.get(combination).click();
-  } else {
-    BdApi.UI.showToast("Not a combination!", {
-      type: "warning",
-      timeout: 1000,
-    });
-  }
+    if (keyPressed === "F") return;
 
-  return combination;
+    userCombination += keyPressed.toUpperCase();
+
+    console.log(userCombination);
+
+    if (combinations.includes(userCombination)) {
+      console.log("combination found");
+      const index = combinations.indexOf(userCombination);
+      elements[index].click();
+      return;
+    } else if (!hasPotentialMatch(userCombination, combinations)) {
+      console.log("combination broken");
+      BdApi.UI.showToast("Not a combination!", {
+        type: "warning",
+        timeout: 1000,
+      });
+      return;
+    }
+  }
 }
 
 function getInput() {
   return new Promise((resolve, reject) => {
     document.addEventListener("keydown", function (event) {
-      const keyPressed = event.key.toLowerCase();
+      const keyPressed = event.key.toUpperCase();
 
       if (keyPressed != null) resolve(keyPressed);
       else reject("Null");
