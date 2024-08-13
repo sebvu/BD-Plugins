@@ -148,13 +148,12 @@ function getInteractiveElements() {
 
 function getUniquePair(elementMap) {
   const possibleCharacters = "ASDGHJKLWERUIO";
+  const randomIndex1 = Math.floor(Math.random() * possibleCharacters.length);
+  const randomIndex2 = Math.floor(Math.random() * possibleCharacters.length);
 
   while (true) {
     let pair =
-      possibleCharacters[
-        Math.floor(Math.random() * possibleCharacters.length)
-      ] +
-      possibleCharacters[Math.floor(Math.random() * possibleCharacters.length)];
+      possibleCharacters[randomIndex1] + possibleCharacters[randomIndex2];
 
     if (elementMap.get(pair) === undefined) {
       return pair;
