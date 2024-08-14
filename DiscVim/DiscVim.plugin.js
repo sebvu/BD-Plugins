@@ -11,62 +11,101 @@ module.exports = class DiscVim {
     this.previousKey = null;
     this.gBuffer = false;
     this.shiftGBuffer = false;
-    this.currentElementPairs = new Map();
+    this.vimModeEnabled = false;
+    this.searchModeEnabled = false;
   }
+  handleClick(event) {
+    if (this.searchModeEnabled) {
+      this.searchModeEnabled = false;
+      cleanDiscord();
+    }
+  }
+
+  handleScroll(event) {}
 
   async handleKeyDown(event) {
     try {
       let key = event.key.toLowerCase();
+
+      if (key === "c" && event.ctrlKey && event.shiftKey) {
+        /*
+            Enable Vim Mode
+            */
+        let result = "";
+
+        if (!this.vimModeEnabled) {
+          this.vimModeEnabled = true;
+          result = "ON";
+        } else {
+          this.vimModeEnabled = false;
+          cleanDiscord();
+          result = "OFF";
+        }
+
+        BdApi.UI.showToast(`Vim Mode ${result}`, {
+          type: "success",
+          timeout: 1000,
+        });
+      }
+
+      if (!this.vimModeEnabled) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
       switch (key) {
         case "f":
           /*
            Search mode
         */
-          const newInteractiveElements = getInteractiveElements();
-          displayPairIndicators(
-            newInteractiveElements,
-            this.currentElementPairs,
-          );
-          document.removeEventListener("keydown", this.handleKeyDown);
-          let temp = await judgeUserInput(this.currentElementPairs);
-          console.log("Script finished with " + temp);
-          document.addEventListener("keydown", this.handleKeyDown);
-          cleanDiscord();
-          console.log("FINISHEDHDHAHDH");
+          this.vimModeEnabled = false;
+          this.searchModeEnabled = true;
+          const interactiveElements = getInteractiveElements();
+          const generatedCombos = getUniquePair(interactiveElements.length);
+
+          if (interactiveElements.length === generatedCombos.length) {
+            displayPairIndicators(interactiveElements, generatedCombos);
+            await judgeUserInput(
+              interactiveElements,
+              generatedCombos,
+              this.vimModeEnabled,
+            );
+            cleanDiscord();
+            console.log("finished f mode");
+          } else {
+            console.log("DID NOT MATCH LENGTHS.");
+            console.log(
+              interactiveElements.length + " LENGTH OF interactiveElements",
+            );
+            console.log(generatedCombos.length + " LENGTH OF generatedCombo");
+            consoleErrorMessage("DID NOT MATCH LENGTHS.");
+          }
+          this.vimModeEnabled = true;
+          this.searchModeEnabled = false;
           break;
         case "k":
-          /*
-          Scroll Up
-        */
-          window.scrollTo(0, 0);
+          window.scrollBy(0, -50); // Scroll up by 50 pixels
           BdApi.UI.showToast("k (up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "j":
-          /*
-          Scroll Down
-        */
+          window.scrollBy(0, 50); // Scroll down by 50 pixels
           BdApi.UI.showToast("j (down) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "u":
-          /*
-          Scroll Half Page Up
-        */
-          window.scrollBy(0, -100);
+          window.scrollBy(0, -window.innerHeight / 2); // Scroll up by half the screen height
           BdApi.UI.showToast("u (half page up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "d":
-          /*
-          Scroll Half Page Down
-        */
+          window.scrollBy(0, window.innerHeight / 2); // Scroll down by half the screen height
           BdApi.UI.showToast("d (half page down) is not binded yet!", {
             type: "warning",
             timeout: 1000,
@@ -74,6 +113,7 @@ module.exports = class DiscVim {
           break;
         case "g":
           if (event.shiftKey) {
+            window.scrollTo(0, document.body.scrollHeight); // Scroll to the bottom
             BdApi.UI.showToast("shift+g (atw down) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -81,6 +121,7 @@ module.exports = class DiscVim {
             this.previousKey = null;
             this.gBuffer = true;
           } else if (this.previousKey == "g" && this.gBuffer === false) {
+            window.scrollTo(0, 0); // Scroll to the top
             BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -89,6 +130,10 @@ module.exports = class DiscVim {
             this.gBuffer = true;
           }
           break;
+        case "r":
+          if (event.ctrlKey) {
+            location.reload(true); // Keep option for reload
+          }
         default:
       }
 
@@ -107,6 +152,8 @@ module.exports = class DiscVim {
       console.log("DiscVim Initializing");
 
       document.addEventListener("keydown", this.handleKeyDown);
+      document.addEventListener("click", this.handleClick);
+      document.addEventListener("scroll", this.handleScroll);
 
       BdApi.UI.alert(
         "DiscVim v0.0.1",
@@ -124,6 +171,8 @@ module.exports = class DiscVim {
       console.log("DiscVim Cleaning");
 
       document.removeEventListener("keydown", this.handleKeyDown);
+      document.removeEventListener("click", this.handleClick);
+      document.removeEventListener("scroll", this.handleScroll);
 
       cleanDiscord();
 
@@ -136,107 +185,155 @@ module.exports = class DiscVim {
 };
 
 function getInteractiveElements() {
-  return document.querySelectorAll(`
+  const elements = document.querySelectorAll(`
     button,
     a.link_d8bfb3,
+    a.link_c91bad,
+    div.labelContainer_d90b3d,
+    div.listItemContents_e05dae,
+    div.interactive_ac5d22,
+    div.memberItem_b09fe8,
+    div.memberInner_a31c43,
+    span.clickable_f9f2ca,
     [role="button"],
     [role="treeitem"],
-    [role="listitem"],
     [role="tab"]
   `);
+
+  return Array.from(elements).filter((element) => {
+    const rect = element.getBoundingClientRect();
+    return (
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <=
+        (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    );
+  });
 }
-
-function getUniquePair(elementMap) {
+function getUniquePair(maxSize) {
   const possibleCharacters = "ASDGHJKLWERUIO";
+  let pairs = [];
 
-  while (true) {
+  while (pairs.length < maxSize) {
+    let pair = "";
     const randomIndex1 = Math.floor(Math.random() * possibleCharacters.length);
     const randomIndex2 = Math.floor(Math.random() * possibleCharacters.length);
 
-    let pair =
-      possibleCharacters[randomIndex1] + possibleCharacters[randomIndex2];
+    if (pairs.length > 196) {
+      const randomIndex3 = Math.floor(
+        Math.random() * possibleCharacters.length,
+      );
+      pair += possibleCharacters[randomIndex3];
+    }
 
-    if (elementMap.get(pair) === undefined) {
-      return pair;
+    pair =
+      pair +
+      possibleCharacters[randomIndex1] +
+      possibleCharacters[randomIndex2];
+
+    if (!pairs.includes(pair)) {
+      pairs.push(pair);
     }
   }
+  return pairs;
 }
 
 function applyCommonStyles(indicator) {
   indicator.style.fontSize = "15px";
+  indicator.style.fontFamily = "system-ui";
   indicator.style.fontWeight = "bold";
   indicator.style.borderRadius = "4px";
   indicator.style.margin = "2px";
   indicator.style.padding = "2px";
   indicator.style.color = "#11111b";
-  indicator.style.zIndex = "1000";
-  // indicator.style.backgroundColor = "#f9e2af";
+  indicator.style.backgroundColor = "#f9e2af";
+  indicator.style.position = "absolute";
+  indicator.style.zIndex = "10000";
 }
 
-function displayPairIndicators(elements, map) {
-  for (const element of elements) {
-    map.set(element, getUniquePair(map, element));
-    element.style.backgroundColor = "blue";
+function displayPairIndicators(interactiveElements, comboPairs) {
+  // both interactiveElements and comboPairs are equal sized
+  maxSize = interactiveElements.length;
+  const placedIndicators = [];
+
+  for (let i = 0; i < maxSize; i++) {
+    const uniquePair = comboPairs[i];
+    const element = interactiveElements[i];
+    console.log(uniquePair + "=>" + element);
+
+    // element.style.backgroundColor = "blue";
+    element.style.position = "relative";
 
     const indicator = document.createElement("div");
     indicator.classList.add("overlay-box");
-    indicator.textContent = map.get(element);
+    indicator.textContent = uniquePair;
 
     element.appendChild(indicator);
-    indicator.style.position = "absolute";
-
-    // subjective parameter, does not apply to all discord layouts.
-    if (
-      !element.matches('[role="button"]') &&
-      !element.matches('[role="listitem"]')
-    ) {
-      indicator.style.top = "50%";
-      indicator.style.left = "50%";
-      indicator.style.transform = "translate(-50%, -50%)";
-      indicator.style.backgroundColor = "red";
-    } else {
-      indicator.style.backgroundColor = "#f9e2af";
-    }
 
     applyCommonStyles(indicator);
   }
 }
 
-async function judgeUserInput(map) {
-  let combination = "";
-  // let combinationBroken = false;
+function hasPotentialMatch(userCombination, combinations) {
+  for (const combination of combinations) {
+    if (combination.startsWith(userCombination)) {
+      console.log("true");
+      return true;
+    }
+  }
+  console.log("false");
+  return false;
+}
 
-  const reversedMap = new Map(Array.from(map, ([key, value]) => [value, key]));
+async function judgeUserInput(elements, combinations) {
+  let userCombination = "";
+  let maxTries = 500;
+  console.log(combinations);
 
-  console.log(reversedMap);
-  while (combination.length < 2) {
+  for (let i = 0; i < maxTries; i++) {
     const keyPressed = await getInput();
-    // return keyPressed;
-    combination += keyPressed.toUpperCase();
-  }
 
-  if (reversedMap.get(combination)) {
-    console.log(combination);
-    console.log(reversedMap.get(combination));
-    reversedMap.get(combination).click();
-  } else {
-    BdApi.UI.showToast("Not a combination!", {
-      type: "warning",
-      timeout: 1000,
-    });
-  }
+    if (keyPressed === "F") return;
 
-  return combination;
+    userCombination += keyPressed.toUpperCase();
+
+    console.log(userCombination);
+
+    if (combinations.includes(userCombination)) {
+      console.log("combination found");
+      const index = combinations.indexOf(userCombination);
+      elements[index].click();
+      return;
+    } else if (!hasPotentialMatch(userCombination, combinations)) {
+      console.log("combination broken");
+      BdApi.UI.showToast("Not a combination!", {
+        type: "warning",
+        timeout: 1000,
+      });
+      return;
+    }
+  }
 }
 
 function getInput() {
   return new Promise((resolve, reject) => {
-    document.addEventListener("keydown", function (event) {
-      const keyPressed = event.key.toLowerCase();
+    const keydownListener = (event) => {
+      const keyPressed = event.key.toUpperCase();
 
-      if (keyPressed != null) resolve(keyPressed);
-      else reject("Null");
-    });
+      event.preventDefault();
+      event.stopPropagation();
+
+      document.removeEventListener("keydown", keydownListener);
+
+      if (keyPressed != null) {
+        resolve(keyPressed);
+      } else {
+        reject("Null");
+      }
+    };
+
+    document.addEventListener("keydown", keydownListener);
   });
 }
 
