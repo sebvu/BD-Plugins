@@ -12,7 +12,16 @@ module.exports = class DiscVim {
     this.gBuffer = false;
     this.shiftGBuffer = false;
     this.vimModeEnabled = false;
+    this.searchModeEnabled = false;
   }
+  handleClick(event) {
+    if (this.searchModeEnabled) {
+      this.searchModeEnabled = false;
+      cleanDiscord();
+    }
+  }
+
+  handleScroll(event) {}
 
   async handleKeyDown(event) {
     try {
@@ -50,6 +59,7 @@ module.exports = class DiscVim {
            Search mode
         */
           this.vimModeEnabled = false;
+          this.searchModeEnabled = true;
           const interactiveElements = getInteractiveElements();
           const generatedCombos = getUniquePair(interactiveElements.length);
 
@@ -71,6 +81,7 @@ module.exports = class DiscVim {
             consoleErrorMessage("DID NOT MATCH LENGTHS.");
           }
           this.vimModeEnabled = true;
+          this.searchModeEnabled = false;
           break;
         case "k":
           window.scrollBy(0, -50); // Scroll up by 50 pixels
@@ -141,6 +152,8 @@ module.exports = class DiscVim {
       console.log("DiscVim Initializing");
 
       document.addEventListener("keydown", this.handleKeyDown);
+      document.addEventListener("click", this.handleClick);
+      document.addEventListener("scroll", this.handleScroll);
 
       BdApi.UI.alert(
         "DiscVim v0.0.1",
@@ -158,6 +171,8 @@ module.exports = class DiscVim {
       console.log("DiscVim Cleaning");
 
       document.removeEventListener("keydown", this.handleKeyDown);
+      document.removeEventListener("click", this.handleClick);
+      document.removeEventListener("scroll", this.handleScroll);
 
       cleanDiscord();
 
@@ -179,6 +194,7 @@ function getInteractiveElements() {
     div.interactive_ac5d22,
     div.memberItem_b09fe8,
     div.memberInner_a31c43,
+    span.clickable_f9f2ca,
     [role="button"],
     [role="treeitem"],
     [role="tab"]
@@ -231,42 +247,29 @@ function applyCommonStyles(indicator) {
   indicator.style.margin = "2px";
   indicator.style.padding = "2px";
   indicator.style.color = "#11111b";
-  indicator.style.zIndex = "1000";
-  // indicator.style.backgroundColor = "#f9e2af";
+  indicator.style.backgroundColor = "#f9e2af";
+  indicator.style.position = "absolute";
+  indicator.style.zIndex = "10000";
 }
 
 function displayPairIndicators(interactiveElements, comboPairs) {
   // both interactiveElements and comboPairs are equal sized
   maxSize = interactiveElements.length;
+  const placedIndicators = [];
 
   for (let i = 0; i < maxSize; i++) {
     const uniquePair = comboPairs[i];
     const element = interactiveElements[i];
     console.log(uniquePair + "=>" + element);
 
-    element.style.backgroundColor = "blue";
+    // element.style.backgroundColor = "blue";
+    element.style.position = "relative";
 
     const indicator = document.createElement("div");
     indicator.classList.add("overlay-box");
     indicator.textContent = uniquePair;
 
     element.appendChild(indicator);
-    indicator.style.position = "absolute";
-
-    // subjective parameter, does not apply to all discord layouts.
-    if (
-      !element.matches('[role="button"]') &&
-      !element.matches('[role="listitem"]') &&
-      !element.matches("div.labelContainer_d90b3d") &&
-      !element.matches("div.memberInner_a31c43")
-    ) {
-      indicator.style.top = "50%";
-      indicator.style.left = "50%";
-      indicator.style.transform = "translate(-50%, -50%)";
-      indicator.style.backgroundColor = "red";
-    } else {
-      indicator.style.backgroundColor = "#f9e2af";
-    }
 
     applyCommonStyles(indicator);
   }
