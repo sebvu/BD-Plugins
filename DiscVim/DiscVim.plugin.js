@@ -13,15 +13,8 @@ module.exports = class DiscVim {
     this.shiftGBuffer = false;
     this.vimModeEnabled = false;
     this.searchModeEnabled = false;
+    this.currentScrollIndex = 0;
   }
-  handleClick(event) {
-    if (this.searchModeEnabled) {
-      this.searchModeEnabled = false;
-      cleanDiscord();
-    }
-  }
-
-  handleScroll(event) {}
 
   async handleKeyDown(event) {
     try {
@@ -53,6 +46,14 @@ module.exports = class DiscVim {
       event.preventDefault();
       event.stopPropagation();
 
+      const scrollContainers = document.querySelectorAll("[class^='scroll']");
+
+      console.log(scrollContainers);
+
+      if (scrollContainers.length - 1 < this.currentScrollIndex) {
+        this.currentScrollIndex = scrollContainers.length - 1;
+      }
+
       switch (key) {
         case "f":
           /*
@@ -83,29 +84,43 @@ module.exports = class DiscVim {
           this.vimModeEnabled = true;
           this.searchModeEnabled = false;
           break;
+        case "h":
+          this.currentScrollIndex = changeContainer(
+            "left",
+            this.currentScrollIndex,
+            scrollContainers,
+          );
+          break;
+        case "l":
+          this.currentScrollIndex = changeContainer(
+            "right",
+            this.currentScrollIndex,
+            scrollContainers,
+          );
+          break;
         case "k":
-          window.scrollBy(0, -50); // Scroll up by 50 pixels
+          scrollChat(-1, this.currentScrollIndex, scrollContainers);
           BdApi.UI.showToast("k (up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "j":
-          window.scrollBy(0, 50); // Scroll down by 50 pixels
+          scrollChat(1, this.currentScrollIndex, scrollContainers);
           BdApi.UI.showToast("j (down) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "u":
-          window.scrollBy(0, -window.innerHeight / 2); // Scroll up by half the screen height
+          scrollChat(-10, this.currentScrollIndex, scrollContainers);
           BdApi.UI.showToast("u (half page up) is not binded yet!", {
             type: "warning",
             timeout: 1000,
           });
           break;
         case "d":
-          window.scrollBy(0, window.innerHeight / 2); // Scroll down by half the screen height
+          scrollChat(10, this.currentScrollIndex, scrollContainers);
           BdApi.UI.showToast("d (half page down) is not binded yet!", {
             type: "warning",
             timeout: 1000,
@@ -113,7 +128,7 @@ module.exports = class DiscVim {
           break;
         case "g":
           if (event.shiftKey) {
-            window.scrollTo(0, document.body.scrollHeight); // Scroll to the bottom
+            scrollChat(5000, this.currentScrollIndex, scrollContainers);
             BdApi.UI.showToast("shift+g (atw down) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -121,7 +136,7 @@ module.exports = class DiscVim {
             this.previousKey = null;
             this.gBuffer = true;
           } else if (this.previousKey == "g" && this.gBuffer === false) {
-            window.scrollTo(0, 0); // Scroll to the top
+            scrollChat(-5000, this.currentScrollIndex, scrollContainers);
             BdApi.UI.showToast("g+g (atw up) is not binded yet!", {
               type: "warning",
               timeout: 1000,
@@ -138,6 +153,7 @@ module.exports = class DiscVim {
       }
 
       console.log(this.previousKey);
+      console.log(this.currentScrollIndex);
 
       if (this.gBuffer === true) this.gBuffer = false;
       else this.previousKey = key;
@@ -152,8 +168,6 @@ module.exports = class DiscVim {
       console.log("DiscVim Initializing");
 
       document.addEventListener("keydown", this.handleKeyDown);
-      document.addEventListener("click", this.handleClick);
-      document.addEventListener("scroll", this.handleScroll);
 
       BdApi.UI.alert(
         "DiscVim v0.0.1",
@@ -171,8 +185,6 @@ module.exports = class DiscVim {
       console.log("DiscVim Cleaning");
 
       document.removeEventListener("keydown", this.handleKeyDown);
-      document.removeEventListener("click", this.handleClick);
-      document.removeEventListener("scroll", this.handleScroll);
 
       cleanDiscord();
 
@@ -184,17 +196,43 @@ module.exports = class DiscVim {
   }
 };
 
+function changeContainer(direction, currentIndex, scrollContainers) {
+  console.log(scrollContainers.length + "rizzler");
+  console.log(currentIndex + "fanum tax");
+  if (scrollContainers.length > currentIndex) {
+    console.log("ffffff");
+    switch (direction) {
+      case "left":
+        return currentIndex - 1;
+      case "right":
+        return currentIndex + 1;
+    }
+  }
+}
+
+function scrollChat(direction, index, scrollContainers) {
+  if (scrollContainers[index]) {
+    scrollContainers[index].scrollBy({
+      top: direction * 50,
+      left: 0,
+      // behavior: "smooth",
+    });
+  } else {
+    consoleErrorMessage("Scrollable chat container not found.");
+  }
+}
+
 function getInteractiveElements() {
   const elements = document.querySelectorAll(`
     button,
-    a.link_d8bfb3,
-    a.link_c91bad,
-    div.labelContainer_d90b3d,
-    div.listItemContents_e05dae,
-    div.interactive_ac5d22,
-    div.memberItem_b09fe8,
-    div.memberInner_a31c43,
-    span.clickable_f9f2ca,
+    a[class^="link"],
+    div[class^="labelContainer"],
+    div[class^="listItemContents"],
+    div[class^="interactive"],
+    div[class^="memberItem"],
+    div[class^="memberInner"],
+    span[class^="clickable"],
+    [class^="scroll"],
     [role="button"],
     [role="treeitem"],
     [role="tab"]
@@ -211,6 +249,7 @@ function getInteractiveElements() {
     );
   });
 }
+
 function getUniquePair(maxSize) {
   const possibleCharacters = "ASDGHJKLWERUIO";
   let pairs = [];
@@ -247,7 +286,7 @@ function applyCommonStyles(indicator) {
   indicator.style.margin = "2px";
   indicator.style.padding = "2px";
   indicator.style.color = "#11111b";
-  indicator.style.backgroundColor = "#f9e2af";
+  // indicator.style.backgroundColor = "#f9e2af";
   indicator.style.position = "absolute";
   indicator.style.zIndex = "10000";
 }
@@ -263,13 +302,23 @@ function displayPairIndicators(interactiveElements, comboPairs) {
     console.log(uniquePair + "=>" + element);
 
     // element.style.backgroundColor = "blue";
-    element.style.position = "relative";
+    // element.style.position = "relative";
 
     const indicator = document.createElement("div");
     indicator.classList.add("overlay-box");
     indicator.textContent = uniquePair;
 
     element.appendChild(indicator);
+
+    if (
+      element.classList.contains("scroll") ||
+      element.className.includes("scroll")
+    ) {
+      indicator.style.backgroundColor = "red";
+      console.log("scroll is found");
+    } else {
+      indicator.style.backgroundColor = "#f9e2af";
+    }
 
     applyCommonStyles(indicator);
   }
@@ -349,8 +398,8 @@ function cleanDiscord() {
 
   const temporary = getInteractiveElements();
 
-  for (const element of temporary)
-    element.style.backgroundColor = "transparent";
+  // for (const element of temporary)
+  //   element.style.backgroundColor = "transparent";
 
   // console.log(tooltips);
 
